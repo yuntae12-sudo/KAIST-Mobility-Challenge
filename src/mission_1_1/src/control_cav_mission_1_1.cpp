@@ -300,9 +300,14 @@ int main(int argc, char** argv)
   node->declare_parameter<double>("max_yaw_rate", 5.5);
 
   // [핵심] 경로를 mission1_01로 고정
+  // Get TEAM_AIM_HOME environment variable (default: /home/aim/TEAM_AIM)
+  const char* team_aim_home = std::getenv("TEAM_AIM_HOME");
+  std::string base_path = (team_aim_home != nullptr && strlen(team_aim_home) > 0) 
+                          ? std::string(team_aim_home) 
+                          : std::string("/home/aim/TEAM_AIM");
   node->declare_parameter<std::string>(
       "path_csv",
-      "/root/TEAM_AIM/src/global_path/path_mission1_01.csv"
+      base_path + "/src/global_path/path_mission1_01.csv"
   );
 
   st->speed_mps    = node->get_parameter("speed_mps").as_double();

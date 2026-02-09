@@ -717,7 +717,7 @@ if (imminent_vehicles != prev_imminent_vehicles[zone_id]) { //prev_imminent_vehi
   }
 
   if (current_red_flag_vehicles != prev_red_flag_vehicles[zone_id]) {
-    RCLCPP_WARN(node->get_logger(), "[ZONE_%d RED_FLAG STATE CHANGED]", zone_id);
+    // RCLCPP_WARN(node->get_logger(), "[ZONE_%d RED_FLAG STATE CHANGED]", zone_id);
 
     for (int prev_cav_index : prev_red_flag_vehicles[zone_id]) {
       if (std::find(current_red_flag_vehicles.begin(), current_red_flag_vehicles.end(), prev_cav_index) == current_red_flag_vehicles.end()) {
@@ -755,8 +755,8 @@ if (imminent_vehicles != prev_imminent_vehicles[zone_id]) { //prev_imminent_vehi
     for (int cav_index : current_red_flag_vehicles) {
       if (cav_index_map_idx_to_actual.count(cav_index)) {
         int actual_cav_id = cav_index_map_idx_to_actual.at(cav_index);
-        RCLCPP_WARN(node->get_logger(), "[ZONE_%d RED_FLAG] CAV_%d (Index=%d) -> STOP (Main=Index_%d, Sub=Index_%d)", 
-                    zone_id, actual_cav_id, cav_index, main_cav_id, cav_sub);
+        // RCLCPP_WARN(node->get_logger(), "[ZONE_%d RED_FLAG] CAV_%d (Index=%d) -> STOP (Main=Index_%d, Sub=Index_%d)", 
+        //             zone_id, actual_cav_id, cav_index, main_cav_id, cav_sub);
       }
     }
   }
@@ -800,14 +800,14 @@ int main(int argc, char** argv) {
       active_cav_ids = {1, 2, 3, 4};
   }
 
-  RCLCPP_INFO(node->get_logger(), "Loading CSV path files (from CAV_IDS mapping)...");
+  // RCLCPP_INFO(node->get_logger(), "Loading CSV path files (from CAV_IDS mapping)...");
   for (size_t i = 0; i < active_cav_ids.size() && i < 4; i++) {
       int actual_cav_id = active_cav_ids[i];
       int cav_index = (int)i + 1;  // 1-indexed
       std::string cav_index_str = std::string(2 - std::to_string(cav_index).length(), '0') + std::to_string(cav_index);
       std::string csv_path = path_dir + "path_mission3_" + cav_index_str + ".csv";
       cav_paths[cav_index] = load_csv_file(csv_path);
-      RCLCPP_INFO(node->get_logger(), "CAV_Index_%d (Actual_ID=%d): %zu waypoints loaded", cav_index, actual_cav_id, cav_paths[cav_index].size());
+      // RCLCPP_INFO(node->get_logger(), "CAV_Index_%d (Actual_ID=%d): %zu waypoints loaded", cav_index, actual_cav_id, cav_paths[cav_index].size());
   }
 
   // RED_FLAG Publisher (based on active CAV count)
@@ -822,7 +822,7 @@ int main(int argc, char** argv) {
       const std::string cav_id_str = std::string(2 - std::to_string(actual_cav_id).length(), '0') + std::to_string(actual_cav_id);
       const std::string flag_topic = "/CAV_" + cav_id_str + "_RED_FLAG";
       red_flag_pubs[actual_cav_id] = node->create_publisher<std_msgs::msg::Int32>(flag_topic, 1);
-      RCLCPP_INFO(node->get_logger(), "Created RED_FLAG publisher for CAV_Index_%d (Actual_ID=%d): %s", cav_index, actual_cav_id, flag_topic.c_str());
+      // RCLCPP_INFO(node->get_logger(), "Created RED_FLAG publisher for CAV_Index_%d (Actual_ID=%d): %s", cav_index, actual_cav_id, flag_topic.c_str());
   }
 
   //  Visualization Publisher 추가 
@@ -838,22 +838,22 @@ int main(int argc, char** argv) {
       const std::string cav_id_str = std::string(2 - std::to_string(actual_cav_id).length(), '0') + std::to_string(actual_cav_id);
       std::string cav_topic = "/CAV_" + cav_id_str;
       auto sub = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-          cav_topic, rclcpp::SensorDataQoS(),
+          cav_topic, rclcpp::SensorDataQoS().keep_last(15),
           [cav_index](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
               cav_poses[cav_index] = {msg->pose.position.x, msg->pose.position.y};
           });
       cav_subscriptions.push_back(sub);
-      RCLCPP_INFO(node->get_logger(), "Subscribed to CAV_Index_%d (Actual_ID=%d): %s", cav_index, actual_cav_id, cav_topic.c_str());
+      // RCLCPP_INFO(node->get_logger(), "Subscribed to CAV_Index_%d (Actual_ID=%d): %s", cav_index, actual_cav_id, cav_topic.c_str());
   }
 
   auto sub19 = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/HV_19", rclcpp::SensorDataQoS(),
+        "/HV_19", rclcpp::SensorDataQoS().keep_last(15),
         [node](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
           hv_19_callback(msg);
     });
 
   auto sub20 = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/HV_20", rclcpp::SensorDataQoS(),
+        "/HV_20", rclcpp::SensorDataQoS().keep_last(15),
         [node](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
           hv_20_callback(msg);
     });
@@ -861,7 +861,7 @@ int main(int argc, char** argv) {
   rclcpp::Rate r(50);
   std::map<int, std::vector<int>> prev_red_flag_vehicles;
 
-  RCLCPP_INFO(node->get_logger(), "Control Tower Node started! (Zone 1,2,3 + ROI 1,2,3,4)");
+  // RCLCPP_INFO(node->get_logger(), "Control Tower Node started! (Zone 1,2,3 + ROI 1,2,3,4)");
 
   while (rclcpp::ok()) {
     //  Zone 1, 2, 3만 모니터링 (Zone 4 제거) 

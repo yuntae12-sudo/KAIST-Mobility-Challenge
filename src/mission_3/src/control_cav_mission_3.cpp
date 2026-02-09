@@ -261,7 +261,7 @@ void planVelocity(ControllerState& st, bool isCorner) {
     // 1.7 ==> 1:05
     // 1.8 ==> 1:04
     // 2.0 ==> 1:00
-    if (!isCorner) {st.speed_mps = 2.0; } else { st.speed_mps = 1.5; }     // < ---------------1------------------
+    if (!isCorner) {st.speed_mps = 1.8; } else { st.speed_mps = 1.5; }     // < ---------------1------------------
     // if (!isCorner) {st.speed_mps = 1.7; } else { st.speed_mps = 1.5; }  //  < --------------2 [v]-------------------
     // if (!isCorner) {st.speed_mps = 2.0; } else { st.speed_mps = 1.5; }  //  < --------------3-------------------
     // if (!isCorner) {st.speed_mps = 2.0; } else { st.speed_mps = 1.5; }  //  < --------------4-------------------
@@ -322,7 +322,7 @@ double applyVelocityRamp(ControllerState& st, double target_velocity, rclcpp::Ti
     return st.current_velocity;
 }
 
-bool CheckAllFinished(const std::vector<CavState>& cav_list, int vehicle_count) {
+bool CheckAllFinished(const std::vector<CavState>& cav_list, int /*vehicle_count*/) {
     int finished_count = 0;
     // for (int i = 1; i <= vehicle_count; ++i) {
     //     if (cav_list[i].finished) finished_count++;
@@ -354,9 +354,9 @@ void PoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg, int cav_
         current_cav.is_in_zone = false;  // ← FALSE로 시작! 첫 프레임에서 영역 밖으로 설정
         current_cav.lap_start_time = msg->header.stamp;
         // [Zone Info Commented Out]
-        if (is_my_cav) {
-            std::cout << "[DEBUG] CAV_index " << cav_id << " initialized at (" << current_x << ", " << current_y << ")" << std::endl;
-        }
+        // if (is_my_cav) {
+        //     std::cout << "[DEBUG] CAV_index " << cav_id << " initialized at (" << current_x << ", " << current_y << ")" << std::endl;
+        // }
         return;
     }
 
@@ -393,9 +393,9 @@ void PoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg, int cav_
     } else {
         if (current_cav.is_in_zone) {
             current_cav.is_in_zone = false;
-            if (is_my_cav) {
-                std::cout << "[DEBUG] CAV " << cav_id << " left zone (dist=" << std::fixed << std::setprecision(2) << dist_to_start << "m)" << std::endl;
-            }
+            // if (is_my_cav) {
+            //     std::cout << "[DEBUG] CAV " << cav_id << " left zone (dist=" << std::fixed << std::setprecision(2) << dist_to_start << "m)" << std::endl;
+            // }
         }
     }
 }
@@ -462,13 +462,18 @@ int main(int argc, char** argv)
   node->declare_parameter<double>("speed_mps", 0.5);
   node->declare_parameter<double>("lookahead_m", 0.4);
   node->declare_parameter<double>("max_yaw_rate", 5.5); // [핵심] 고속 주행을 위해 Yaw Rate 제한 대폭 해제 // ** 5.5 -> 2.5 ?** // ****
-  node->declare_parameter<std::string>("path_csv", "/root/TEAM_AIM/src/global_path/path.csv");
+  node->declare_parameter<std::string>("path_csv", "/home/aim/TEAM_AIM/src/global_path/path.csv");
 
   st->speed_mps    = node->get_parameter("speed_mps").as_double();
   st->lookahead_m  = node->get_parameter("lookahead_m").as_double();
   st->max_yaw_rate = node->get_parameter("max_yaw_rate").as_double();
 
-  const std::string path_with_id_csv = std::string("/root/TEAM_AIM/src/global_path/") + "path_mission3_" + std::string(2 - std::to_string(cav_index).length(), '0') + std::to_string(cav_index) + ".csv";
+  // Get TEAM_AIM_HOME environment variable (default: /home/aim/TEAM_AIM)
+  const char* team_aim_home = std::getenv("TEAM_AIM_HOME");
+  std::string base_path = (team_aim_home != nullptr && strlen(team_aim_home) > 0) 
+                          ? std::string(team_aim_home) 
+                          : std::string("/home/aim/TEAM_AIM");
+  const std::string path_with_id_csv = base_path + "/src/global_path/" + "path_mission3_" + std::string(2 - std::to_string(cav_index).length(), '0') + std::to_string(cav_index) + ".csv";
   if (!loadPathCsv(path_with_id_csv, integrate_path_vector)) {
     RCLCPP_FATAL(node->get_logger(), "Failed to load path csv: %s", path_with_id_csv.c_str());
     rclcpp::shutdown(); return 1;
@@ -522,26 +527,26 @@ int main(int argc, char** argv)
       std::string target_topic = "/CAV_" + twoDigitId(actual_subscribe_cav_id);
       
       auto sub = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-          target_topic, rclcpp::SensorDataQoS(),
+          target_topic, rclcpp::SensorDataQoS().keep_last(15),
           [node, st, accel_pub, cmd_vel_pub, &cav_list, actual_cav_id, csv_index, cav_index, actual_vehicle_count, cmd_vel_topic](const geometry_msgs::msg::PoseStamped::SharedPtr msg)
           {
             // Update lap tracking for this vehicle
             PoseCallback(msg, csv_index, cav_list, cav_index);
 
             // Print lap status of all vehicles periodically
-            static int lap_status_counter = 0;
-            if (lap_status_counter++ % 500 == 0) {  // Print every 500 cycles (~10 seconds at 50Hz)
-                std::cout << "\n=== LAP STATUS ===";
-                for (int i = 1; i <= actual_vehicle_count; ++i) {
-                    std::cout << " | CAV_" << i << ": " << cav_list[i].current_lap << "/5";
-                }
-                std::cout << " ===\n" << std::endl;
-            }
+            // static int lap_status_counter = 0;
+            // if (lap_status_counter++ % 500 == 0) {  // Print every 500 cycles (~10 seconds at 50Hz)
+            //     std::cout << "\n=== LAP STATUS ===";
+            //     for (int i = 1; i <= actual_vehicle_count; ++i) {
+            //         std::cout << " | CAV_" << i << ": " << cav_list[i].current_lap << "/5";
+            //     }
+            //     std::cout << " ===\n" << std::endl;
+            // }
 
             // Check mission completion and set global flag
             if (CheckAllFinished(cav_list, actual_vehicle_count) && !mission_completed) {
                 mission_completed = true;
-                std::cout << ">>> [ALL " << actual_vehicle_count << " VEHICLES FINISHED] Starting continuous STOP publish! <<<" << std::endl;
+                // std::cout << ">>> [ALL " << actual_vehicle_count << " VEHICLES FINISHED] Starting continuous STOP publish! <<<" << std::endl;
             }
 
             // Execute control ONLY for my own CAV
@@ -560,9 +565,9 @@ int main(int argc, char** argv)
                     stop_twist.angular.x = 0.0; stop_twist.angular.y = 0.0; stop_twist.angular.z = 0.0;
                     cmd_vel_pub->publish(stop_twist);
                     
-                    if (stop_publish_count++ % 100 == 0) {
-                        std::cout << "[STOP] Continuous STOP command published to " << cmd_vel_topic << " (" << stop_publish_count << ")" << std::endl;
-                    }
+                    // if (stop_publish_count++ % 100 == 0) {
+                    //     std::cout << "[STOP] Continuous STOP command published to " << cmd_vel_topic << " (" << stop_publish_count << ")" << std::endl;
+                    // }
                     return;
                 }
 
@@ -632,7 +637,8 @@ int main(int argc, char** argv)
                     // All CAVs finished 5 laps - STOP
                     cmd.linear.x  = 0.0;
                     cmd.angular.z = 0.0;
-                    twist_cmd.linear.x = -0.005; // Stop command
+                    // twist_cmd.linear.x = -0.005; // Stop command
+                    twist_cmd.linear.x = 0.0; // Stop command ->  바퀴 힘 없이 , 관성으로 랩타임 넘어가게끔,
                     twist_cmd.angular.z = 0.0;
                 } else if (st->red_flag == 1) { 
                     // Red flag: STOP with -0.005

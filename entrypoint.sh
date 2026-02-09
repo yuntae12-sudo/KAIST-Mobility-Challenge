@@ -13,8 +13,13 @@ ROLE=${ROLE:-simulator}
 CAV_ID=${CAV_ID:-1}
 ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-110}
 
-cd /root/TEAM_AIM
-source /root/TEAM_AIM/install/setup.bash
+# Use TEAM_AIM_HOME if set, otherwise default to /root/TEAM_AIM
+TEAM_AIM_HOME=${TEAM_AIM_HOME:-/root/TEAM_AIM}
+cd "$TEAM_AIM_HOME"
+source "$TEAM_AIM_HOME/install/setup.bash"
+
+# Export TEAM_AIM_HOME for hardcoded path references
+export TEAM_AIM_HOME
 
 # Set default network configuration for all missions
 if [ -z "$ROS_LOCALHOST_ONLY" ]; then

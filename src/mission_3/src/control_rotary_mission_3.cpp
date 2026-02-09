@@ -517,11 +517,11 @@ int main(int argc, char * argv[])
                             : std::string("/root/TEAM_AIM");
     std::string path_dir = base_path + "/src/global_path/";
 
-    RCLCPP_INFO(node->get_logger(), "Loading CSV path files...");
+    // RCLCPP_INFO(node->get_logger(), "Loading CSV path files...");
     int i = 19;
     std::string csv_path = path_dir + "path_mission3_" + std::to_string(i) + ".csv";
     hv_paths[i] = load_csv_file(csv_path);
-    RCLCPP_INFO(node->get_logger(), "HV_%d: %zu waypoints loaded", i, hv_paths[i].size());
+    // RCLCPP_INFO(node->get_logger(), "HV_%d: %zu waypoints loaded", i, hv_paths[i].size());
     
 
     // Get CAV_IDS from environment variable (format: "32,3,5,6")
@@ -560,7 +560,7 @@ int main(int argc, char * argv[])
         yellow_flag_pubs[cav_index] = node->create_publisher<std_msgs::msg::Int32>(yellow_flag_topic, 1);
         const std::string vel_topic = "/CAV_" + cav_id_str + "_target_vel";
         target_vel_pubs[cav_index] = node->create_publisher<std_msgs::msg::Float64>(vel_topic, 1);
-        RCLCPP_INFO(node->get_logger(), "Created publishers for CAV_Index_%d (Actual_ID=%d): topics %s, %s, %s", cav_index, actual_cav_id, flag_topic.c_str(), yellow_flag_topic.c_str(), vel_topic.c_str());
+        // RCLCPP_INFO(node->get_logger(), "Created publishers for CAV_Index_%d (Actual_ID=%d): topics %s, %s, %s", cav_index, actual_cav_id, flag_topic.c_str(), yellow_flag_topic.c_str(), vel_topic.c_str());
     }
 
     // Subscribers for CAV indices (1-4), HV 19, 20
@@ -572,28 +572,28 @@ int main(int argc, char * argv[])
         const std::string cav_id_str = std::string(2 - std::to_string(actual_cav_id).length(), '0') + std::to_string(actual_cav_id);
         std::string cav_topic = "/CAV_" + cav_id_str;
         auto sub = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-            cav_topic, rclcpp::SensorDataQoS(),
+            cav_topic, rclcpp::SensorDataQoS().keep_last(15),
             [cav_index](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
                 cav_poses[cav_index] = {msg->pose.position.x, msg->pose.position.y};
             });
         cav_subscriptions.push_back(sub);
-        RCLCPP_INFO(node->get_logger(), "Subscribed to CAV_Index_%d (Actual_ID=%d): %s", cav_index, actual_cav_id, cav_topic.c_str());
+        // RCLCPP_INFO(node->get_logger(), "Subscribed to CAV_Index_%d (Actual_ID=%d): %s", cav_index, actual_cav_id, cav_topic.c_str());
     }
 
     auto sub19 = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/HV_19", rclcpp::SensorDataQoS(),
+        "/HV_19", rclcpp::SensorDataQoS().keep_last(15),
         [node](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
           hv_19_callback(msg);
     });
 
     auto sub20 = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/HV_20", rclcpp::SensorDataQoS(),
+        "/HV_20", rclcpp::SensorDataQoS().keep_last(15),
         [node](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
           hv_20_callback(msg);
     });
 
     auto sub_hv19 = node->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/HV_19", rclcpp::SensorDataQoS(),
+        "/HV_19", rclcpp::SensorDataQoS().keep_last(15),
         [&](const geometry_msgs::msg::PoseStamped::SharedPtr msg){
             hv_19_callback(msg); 
             CalculateInstantVelocity(msg, 19, hv_states);
@@ -607,7 +607,7 @@ int main(int argc, char * argv[])
     std::map<int, std::set<int>> cav_released_states;
     
     double yellow_roi_detection_radius = 0.5;  // yellow ROI 감지 반경 0.3 / 0.5 / 0.4
-    RCLCPP_INFO(node->get_logger(), "Simple Speed Trap Started.");
+    // RCLCPP_INFO(node->get_logger(), "Simple Speed Trap Started.");
     
     while(rclcpp::ok()) {
         // Publish yellow zone markers for visualization in RViz
@@ -643,9 +643,9 @@ int main(int argc, char * argv[])
                 }
                 
                 if (current_zone_group == 0) {
-                    RCLCPP_WARN(node->get_logger(), ">>> CAV_%d: Left Yellow Zone - Yellow Flag OFF <<<", cav_index);
+                    // RCLCPP_WARN(node->get_logger(), ">>> CAV_%d: Left Yellow Zone - Yellow Flag OFF <<<", cav_index);
                 } else {
-                    RCLCPP_WARN(node->get_logger(), ">>> CAV_%d: Entered Yellow Zone Group_%d - Yellow Flag = %d <<<", cav_index, current_zone_group, current_zone_group);
+                    // RCLCPP_WARN(node->get_logger(), ">>> CAV_%d: Entered Yellow Zone Group_%d - Yellow Flag = %d <<<", cav_index, current_zone_group, current_zone_group);
                 }
             }
         }
