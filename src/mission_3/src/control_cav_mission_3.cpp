@@ -483,6 +483,9 @@ int main(int argc, char** argv)
   auto accel_pub = node->create_publisher<geometry_msgs::msg::Accel>(accel_topic, rclcpp::SensorDataQoS());
   auto cmd_vel_pub = node->create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic, rclcpp::QoS(10));
 
+  // === 노드 시작 시간 기록 (3초 정지용) ===
+  rclcpp::Time node_start_time = node->now();
+
   auto flag_sub = node->create_subscription<std_msgs::msg::Int32>(
       red_flag_topic, 1, [node, st](const std_msgs::msg::Int32::SharedPtr msg) { st->red_flag = msg->data; });
 
@@ -528,8 +531,12 @@ int main(int argc, char** argv)
       
       auto sub = node->create_subscription<geometry_msgs::msg::PoseStamped>(
           target_topic, rclcpp::SensorDataQoS().keep_last(15),
-          [node, st, accel_pub, cmd_vel_pub, &cav_list, actual_cav_id, csv_index, cav_index, actual_vehicle_count, cmd_vel_topic](const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+          [node, st, accel_pub, cmd_vel_pub, &cav_list, actual_cav_id, csv_index, cav_index, actual_vehicle_count, cmd_vel_topic, node_start_time](const geometry_msgs::msg::PoseStamped::SharedPtr msg)
           {
+            // === 3초 정지 체크 ===
+            double elapsed_time = (node->now() - node_start_time).seconds();
+            bool in_startup_delay = (elapsed_time < 4.0);
+
             // Update lap tracking for this vehicle
             PoseCallback(msg, csv_index, cav_list, cav_index);
 
@@ -568,6 +575,26 @@ int main(int argc, char** argv)
                     // if (stop_publish_count++ % 100 == 0) {
                     //     std::cout << "[STOP] Continuous STOP command published to " << cmd_vel_topic << " (" << stop_publish_count << ")" << std::endl;
                     // }
+                    return;
+                }
+
+                // === 3초 내 정지 명령 ===
+                if (in_startup_delay) {
+                    geometry_msgs::msg::Accel stop_cmd;
+                    stop_cmd.linear.x = 0.0; stop_cmd.linear.y = 0.0; stop_cmd.linear.z = 0.0;
+                    stop_cmd.angular.x = 0.0; stop_cmd.angular.y = 0.0; stop_cmd.angular.z = 0.0;
+                    accel_pub->publish(stop_cmd);
+                    
+                    geometry_msgs::msg::Twist stop_twist;
+                    stop_twist.linear.x = 0.0; stop_twist.linear.y = 0.0; stop_twist.linear.z = 0.0;
+                    stop_twist.angular.x = 0.0; stop_twist.angular.y = 0.0; stop_twist.angular.z = 0.0;
+                    cmd_vel_pub->publish(stop_twist);
+                    
+                    static bool startup_printed = false;
+                    if (!startup_printed) {
+                        std::cout << "🛑 [CAV_" << actual_cav_id << "] Startup delay active - holding STOP for 3 seconds..." << std::endl;
+                        startup_printed = true;
+                    }
                     return;
                 }
 
@@ -699,6 +726,21 @@ int main(int argc, char** argv)
   }
 
   (void)flag_sub; (void)yellow_flag_sub; (void)vel_sub;
+  
+  // === 3초 딜레이: 모든 CAV 동일 출발 시간 보장 ===
+  std::cout << "\n" << std::endl;
+  std::cout << "╔═══════════════════════════════════════════════════════════════╗" << std::endl;
+  std::cout << "║          Mission 3 Starting in 3 seconds...                   ║" << std::endl;
+  std::cout << "╚═══════════════════════════════════════════════════════════════╝" << std::endl;
+  
+  for (int i = 3; i >= 1; i--) {
+    std::cout << "  ⏱️  " << i << " second(s) remaining..." << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+  
+  std::cout << "\n🚗 Mission 3 STARTED! All CAVs departing now!" << std::endl;
+  std::cout << "═══════════════════════════════════════════════════════════════\n" << std::endl;
+  
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
