@@ -87,6 +87,11 @@ struct ControllerState
   const int RED_FLAG_RELEASE_STABILIZE_CYCLES = 200;  // ~1초 (50Hz에서)
   double max_acceleration_after_red_flag{0.8};  // Red flag 해제 후 느린 가속도
   
+  // ✅ [추가] 시작 3초 정지
+  rclcpp::Time start_stop_time;  // 시작 정지 시작 시간
+  bool is_start_stop_active{false};  // 정지 중인지 여부
+  const int START_STOP_DURATION_MS = 4000;  // 3초
+  
   rclcpp::Time last_update_time;  // 마지막 업데이트 시간
 };
 
@@ -172,11 +177,11 @@ inline int closest_index = 0;
 
 void GetLd(ControllerState& st) {
 //   double gain_ld = 0.6; // 0.4 -> 0.6 ** tuning **
-  double gain_ld = 0.7; // 0.4 -> 0.6 ** tuning ** 0.6 -> 0.7 
+  // double gain_ld = 0.7; // 0.4 -> 0.6 ** tuning ** 0.6 -> 0.7 
 //   double max_ld  = 0.355;
   double max_ld  = 0.4;  // 
   double min_ld  = 0.3; // 0.15 -> 0.1 -> 0.2 // ** 0.33 -> 0.23 
-  double velocity = st.speed_mps; 
+  // double velocity = st.speed_mps; 
 //   double ld = gain_ld * velocity;
   double ld = 3.0;
   st.lookahead_m = max(min_ld, std::min(max_ld, ld));
@@ -340,7 +345,7 @@ bool CheckAllFinished(const std::vector<CavState>& cav_list, int /*vehicle_count
 static bool mission_completed = false;
 static int stop_publish_count = 0;
 
-void PoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg, int cav_id, std::vector<CavState>& states, int my_cav_index) {
+void PoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg, int cav_id, std::vector<CavState>& states, int my_cav_index, std::shared_ptr<ControllerState> st) {
     CavState& current_cav = states[cav_id];
     double current_x = msg->pose.position.x;
     double current_y = msg->pose.position.y;
@@ -353,6 +358,14 @@ void PoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg, int cav_
         current_cav.is_initialized = true;
         current_cav.is_in_zone = false;  // ← FALSE로 시작! 첫 프레임에서 영역 밖으로 설정
         current_cav.lap_start_time = msg->header.stamp;
+        
+        // ✅ [추가] 시작 3초 정지 활성화
+        st->is_start_stop_active = true;
+        st->start_stop_time = msg->header.stamp;
+        if (is_my_cav) {
+            std::cout << "[CAV_index " << cav_id << "] 3-second initial stop activated" << std::endl;
+        }
+        
         // [Zone Info Commented Out]
         // if (is_my_cav) {
         //     std::cout << "[DEBUG] CAV_index " << cav_id << " initialized at (" << current_x << ", " << current_y << ")" << std::endl;
@@ -531,7 +544,7 @@ int main(int argc, char** argv)
           [node, st, accel_pub, cmd_vel_pub, &cav_list, actual_cav_id, csv_index, cav_index, actual_vehicle_count, cmd_vel_topic](const geometry_msgs::msg::PoseStamped::SharedPtr msg)
           {
             // Update lap tracking for this vehicle
-            PoseCallback(msg, csv_index, cav_list, cav_index);
+            PoseCallback(msg, csv_index, cav_list, cav_index, st);
 
             // Print lap status of all vehicles periodically
             // static int lap_status_counter = 0;
@@ -624,7 +637,7 @@ int main(int argc, char** argv)
                 // [New] Print current speed info periodically
                 // static int speed_print_counter = 0;
                 // if (speed_print_counter++ % 50 == 0) {  // Print every 50 cycles (~1 second at 50Hz)
-                //     std::cout << "[CAV " << target_id << "] Speed: " << std::fixed << std::setprecision(2) << current_target_speed << " m/s" << std::endl;
+                //     std::cout << "[CAV " << actual_subscribe_cav_id << "] Speed: " << std::fixed << std::setprecision(2) << current_target_speed << " m/s" << std::endl;
                 // }
 
 
@@ -632,8 +645,28 @@ int main(int argc, char** argv)
                 geometry_msgs::msg::Accel cmd;
                 geometry_msgs::msg::Twist twist_cmd;
                 
-                // Check if ALL CAVs have finished 5 laps
-                if (mission_completed) {
+                // ✅ [추가] 시작 3초 정지 체크
+                if (st->is_start_stop_active) {
+                    double elapsed_ms = (rclcpp::Time(msg->header.stamp) - st->start_stop_time).seconds() * 1000.0;
+                    if (elapsed_ms < 3000) {
+                        // 3초 동안 정지
+                        cmd.linear.x = 0.0;
+                        cmd.angular.z = 0.0;
+                        twist_cmd.linear.x = 0.0;
+                        twist_cmd.angular.z = 0.0;
+                    } else {
+                        // 3초 경과 후 정지 해제
+                        st->is_start_stop_active = false;
+                        if (csv_index == cav_index) {
+                            std::cout << "[CAV_index " << actual_cav_id << "] 3-second initial stop completed, starting motion" << std::endl;
+                        }
+                    }
+                }
+                
+                // 정지 중이 아니면 정상 제어 진행
+                if (!st->is_start_stop_active) {
+                    // Check if ALL CAVs have finished 5 laps
+                    if (mission_completed) {
                     // All CAVs finished 5 laps - STOP
                     cmd.linear.x  = 0.0;
                     cmd.angular.z = 0.0;
@@ -683,6 +716,8 @@ int main(int argc, char** argv)
                     twist_cmd.linear.x = ramped_speed;
                     twist_cmd.angular.z = wz;
                 }
+                    } // 정지 중이 아닐 때 제어 끝
+                
                 cmd.linear.y = 0.0; cmd.linear.z = 0.0;
                 cmd.angular.x = 0.0; cmd.angular.y = 0.0;
                 

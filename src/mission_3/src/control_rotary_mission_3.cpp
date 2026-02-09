@@ -237,7 +237,7 @@ double calculate_distance(Pose pose1, Pose pose2) {
 // =========================
 // CAV의 현재 zone group 판단 함수
 // =========================
-int get_zone_group_for_cav(int cav_index, const Pose& cav_pose, double detection_radius) {
+int get_zone_group_for_cav(int /*cav_index*/, const Pose& cav_pose, double detection_radius) {
     for (const auto& [yellow_roi_id, yellow_roi_pose] : yellow_cav_rois) {
         double dist = calculate_distance(cav_pose, yellow_roi_pose);
         if (dist <= detection_radius) {
@@ -340,7 +340,7 @@ void publish_yellow_zone_markers(std::shared_ptr<rclcpp::Node> node,
 
 void monitor_all_rois(
     int cav_roi_id, int hv_roi_id,
-    std::shared_ptr<rclcpp::Node> node,
+    std::shared_ptr<rclcpp::Node> /*node*/,
     std::map<int, rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr>& red_flag_pubs,
     std::map<int, rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr>& target_vel_pubs,
     double detection_radius,  // cav_roi에서는 저 범위 안에 들어오면 cav 멈추게, hv_roi에서는 hv가 통과할 때 cav에게 주행권한 주는 범위
