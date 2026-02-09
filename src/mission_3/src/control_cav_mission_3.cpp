@@ -396,7 +396,7 @@ void PoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg, int cav_
                 std::cout << "═══════════════════════════════════════════════════════════════" << std::endl << std::endl;
             }
             
-            if (current_cav.current_lap >= 5) {
+            if (current_cav.current_lap >= 6) { // ** LAP COUNT 5 -> 6 **
                 current_cav.finished = true;
                 if (is_my_cav) {
                     std::cout << "🎉 [CAV_index " << cav_id << "] ✓ FINISHED 5 LAPS! ✓" << std::endl << std::endl;
@@ -697,8 +697,8 @@ int main(int argc, char** argv)
                     twist_cmd.angular.z = wz;
                 } else if (st->yellow_flag == 2) {
                     // Yellow flag Group 2 (Zone 3,4,5,6,7,8): Slow down to 1.5 m/s
-                    cmd.linear.x  = 1.0;
-                    twist_cmd.linear.x = 1.0;      // < ---------------1-------------------
+                    cmd.linear.x  = 0.8;
+                    twist_cmd.linear.x = 0.8;      // < ---------------1-------------------
                     // twist_cmd.linear.x = 1.3;   //  < --------------2-------------------
                     // twist_cmd.linear.x = 1.0;   //  < --------------3-------------------
                     // twist_cmd.linear.x = 1.3;   //  < --------------4-------------------
