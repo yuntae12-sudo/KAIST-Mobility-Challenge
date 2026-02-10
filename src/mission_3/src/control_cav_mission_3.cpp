@@ -84,8 +84,8 @@ struct ControllerState
   
   // ✅ [추가] Red flag 상태 추적 (정지 후 느리게 속도 올림)
   int red_flag_hold_count{0};  // Red flag 지속 카운트
-  const int RED_FLAG_RELEASE_STABILIZE_CYCLES = 200;  // ~1초 (50Hz에서)
-  double max_acceleration_after_red_flag{0.8};  // Red flag 해제 후 느린 가속도
+  const int RED_FLAG_RELEASE_STABILIZE_CYCLES = 100;  // ~1초 (50Hz에서)
+  double max_acceleration_after_red_flag{2.5};  // Red flag 해제 후 느린 가속도
   
   // ✅ [추가] 시작 3초 정지
   rclcpp::Time start_stop_time;  // 시작 정지 시작 시간
