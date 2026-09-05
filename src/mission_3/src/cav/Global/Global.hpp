@@ -25,7 +25,7 @@ struct ControllerState
 {
   double speed_mps{0.5};
   double lookahead_m{0.3};
-  double max_yaw_rate{2.0}; // ** 5.5 (noise error) -> 2.5 (tuning) ** -> 2.0
+  double max_yaw_rate{2.0}; // 5.5는 센서 노이즈로 오차가 있어 2.0으로 낮춤
 
   double prev_x{0.0};
   double prev_y{0.0};

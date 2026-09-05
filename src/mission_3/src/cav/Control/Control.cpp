@@ -29,7 +29,7 @@ void ControlProcess(ControllerState& st,
     current_target_speed = st.speed_mps;
   }
 
-  // *** [핵심] 속도 래프 적용 - 급가속 방지 및 헤딩 안정화 ***
+  // 속도 램프 적용 - 급가속 방지 및 헤딩 안정화
   double ramped_speed = applyVelocityRamp(st, current_target_speed, stamp);
 
   st.speed_mps = current_target_speed;  // 목표값 유지
@@ -37,7 +37,7 @@ void ControlProcess(ControllerState& st,
   // 목표 속도가 반영된 Lookahead로 목표 Waypoint를 다시 탐색한다.
   int target_path_idx = FindTargetWaypoint(path, x_m, y_m, st);
 
-  // *** [수정] ramped_speed를 사용하여 각속도도 부드럽게 제어 ***
+  // ramped_speed를 사용하여 각속도도 부드럽게 제어한다.
   double wz = PurePursuitAngularVelocity(path, target_path_idx, x_m, y_m, yaw,
                                           ramped_speed, st.max_yaw_rate);
 
@@ -45,18 +45,9 @@ void ControlProcess(ControllerState& st,
 }
 
 // 직선(1.8)/커브(1.5) 구간에 따라 목표 속도를 정한다.
+// 실측 랩타임 기준 1.7 m/s -> 1:05, 1.8 m/s -> 1:04, 2.0 m/s -> 1:00으로 1.8 m/s를 채택했다.
 void planVelocity(ControllerState& st, bool isCorner) {
-    // 1.7 ==> 1:05
-    // 1.8 ==> 1:04
-    // 2.0 ==> 1:00
-    if (!isCorner) {st.speed_mps = 1.8; } else { st.speed_mps = 1.5; }     // < ---------------1------------------
-    // if (!isCorner) {st.speed_mps = 1.7; } else { st.speed_mps = 1.5; }  //  < --------------2 [v]-------------------
-    // if (!isCorner) {st.speed_mps = 2.0; } else { st.speed_mps = 1.5; }  //  < --------------3-------------------
-    // if (!isCorner) {st.speed_mps = 2.0; } else { st.speed_mps = 1.5; }  //  < --------------4-------------------
-    // if (!isCorner) {st.speed_mps = 1.9; } else { st.speed_mps = 1.5; }  //  < --------------5-------------------
-    // if (!isCorner) {st.speed_mps = 1.9; } else { st.speed_mps = 1.5; }  //  < --------------6--------------------
-    // if (!isCorner) {st.speed_mps = 1.8; } else { st.speed_mps = 1.5; }  //  < --------------7------------------
-    // if (!isCorner) {st.speed_mps = 1.8; } else { st.speed_mps = 1.5; }  //  < --------------8-------------------
+    if (!isCorner) {st.speed_mps = 1.8; } else { st.speed_mps = 1.5; }
 }
 
 // 최대 가속도 제한으로 목표 속도까지 부드럽게 도달시킨다. Red flag 해제 직후에는

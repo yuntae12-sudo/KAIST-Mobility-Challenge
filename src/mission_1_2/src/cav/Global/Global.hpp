@@ -24,7 +24,7 @@ struct ControllerState
 {
   double speed_mps{0.5};
   double lookahead_m{0.3};
-  double max_yaw_rate{4.0}; // [핵심 수정] 1.5 -> 4.0 (고속 회전 허용)
+  double max_yaw_rate{4.0}; // 고속 회전 허용을 위한 값
 
   double prev_x{0.0};
   double prev_y{0.0};

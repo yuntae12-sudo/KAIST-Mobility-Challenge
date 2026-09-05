@@ -7,7 +7,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/accel.hpp>
 #include <std_msgs/msg/int32.hpp>
-#include <std_msgs/msg/float64.hpp> // [수정] Float64 사용
+#include <std_msgs/msg/float64.hpp>
 
 #include <cmath>
 #include <cstdlib>
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 
   node->declare_parameter<double>("speed_mps", 0.5);
   node->declare_parameter<double>("lookahead_m", 0.4);
-  node->declare_parameter<double>("max_yaw_rate", 4.0); // [핵심] 고속 주행을 위해 Yaw Rate 제한 대폭 해제
+  node->declare_parameter<double>("max_yaw_rate", 4.0); // 고속 주행을 위해 Yaw Rate 제한을 완화함
   node->declare_parameter<std::string>("path_csv", "/root/TEAM_AIM/src/global_path/path_mission1_01.csv");
 
   st->speed_mps    = node->get_parameter("speed_mps").as_double();

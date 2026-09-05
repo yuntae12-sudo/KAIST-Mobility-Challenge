@@ -68,7 +68,7 @@ void MissionProcess(const geometry_msgs::msg::PoseStamped::SharedPtr msg, int ca
                 std::cout << "═══════════════════════════════════════════════════════════════" << std::endl << std::endl;
             }
 
-            if (current_cav.current_lap >= 6) { // ** LAP COUNT 5 -> 6 **
+            if (current_cav.current_lap >= 6) {
                 current_cav.finished = true;
                 if (is_my_cav) {
                     std::cout << "🎉 [CAV_index " << cav_id << "] ✓ FINISHED 5 LAPS! ✓" << std::endl << std::endl;

@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 
   node->declare_parameter<double>("speed_mps", 0.5);
   node->declare_parameter<double>("lookahead_m", 0.4);
-  node->declare_parameter<double>("max_yaw_rate", 5.5); // [핵심] 고속 주행을 위해 Yaw Rate 제한 대폭 해제 // ** 5.5 -> 2.5 ?** // ****
+  node->declare_parameter<double>("max_yaw_rate", 5.5); // 고속 주행을 위해 Yaw Rate 제한을 기본값 기준 넉넉하게 둠
   node->declare_parameter<std::string>("path_csv", "/home/aim/TEAM_AIM/src/global_path/path.csv");
 
   st->speed_mps    = node->get_parameter("speed_mps").as_double();

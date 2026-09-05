@@ -52,7 +52,7 @@ int main(int argc, char** argv)
   node->declare_parameter<double>("lookahead_m", 0.4);
   node->declare_parameter<double>("max_yaw_rate", 5.5);
 
-  // [핵심] 경로를 mission1_01로 고정
+  // 경로를 mission1_01로 고정
   // Get TEAM_AIM_HOME environment variable (default: /home/aim/TEAM_AIM)
   const char* team_aim_home = std::getenv("TEAM_AIM_HOME");
   std::string base_path = (team_aim_home != nullptr && strlen(team_aim_home) > 0)

@@ -39,22 +39,7 @@ void ControlProcess(ControllerState& st,
 
 // 직선(2.0)/커브(1.5) 구간에 따라 목표 속도를 정한다.
 void planVelocity(ControllerState& st, bool isCorner) {
-    if (!isCorner) {st.speed_mps = 2.0; } else { st.speed_mps = 1.5; } // good (1.5 / 1.0) -> (1.5 / 0.8)
-    // if (!isCorner) {st.speed_mps = 1.7; } else { st.speed_mps = 1.4; } // good (1.5 / 1.0) -> (1.5 / 0.8)
-    /*
-    ver1 -> 1.5     / 1.0     / 0.8
-    ver2 -> 1.6     / 1.2     / 1.0
-    ver3 -> 1.6     / 1.2     / 1.1
-    ver4 -> 1.7     / 1.3     / 0.8
-    ver5 -> 1.75    / 1.3     / 0.8
-    ver 6 -> 1.75    / 1.3     / 1.0
-    ver 7 -> 1.8     / 1.5     / 0.8
-    ver 8 -> 1.8    / 1.5     / 1.0
-    ver 9 -> 1.9     / 1.5     / 0.8
-    ver 10 - > 1.9    /   1.5.  /   1.0
-    ver 11 -> 2.0     / 1.5     / 0.8
-    ver 12 -> 2.0     / 1.5     / 1.0
-    */
+    if (!isCorner) {st.speed_mps = 2.0; } else { st.speed_mps = 1.5; }
 }
 
 // 목표 Waypoint와 현재 위치/자세로부터 곡률을 구하고, 이를 각속도로 변환한다.

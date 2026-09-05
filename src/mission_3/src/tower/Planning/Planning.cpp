@@ -77,11 +77,6 @@ bool check_path_overlap(
 
   csv_distance = min_dist_found;
 
-  if (min_dist_found < overlap_threshold ) {
-    // std::cout << "[PATH DEBUG] Min Distance: " << min_dist_found
-    //           << "m (Overlap: " << (is_overlapping ? "YES" : "NO") << ")" << std::endl;
-  }
-
   return is_overlapping;
 }
 
@@ -139,8 +134,6 @@ int select_best_sub_cav(int main_cav_id, const std::vector<int>& precollision_ca
 
   // 경로 안 겹치는 후보군이 없을 때, 안전한 경로 겹침 체크
   if (non_overlapping_candidates.empty()) {
-    // std::cout << "[SUB_CAV SELECT] No non-overlapping candidates. Checking safe overlap cases..." << std::endl;
-
     std::vector<int> safe_overlap_candidates;
 
     for (int sub_id : precollision_candidates) {

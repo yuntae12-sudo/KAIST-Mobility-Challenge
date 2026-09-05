@@ -92,16 +92,11 @@ bool isCorner(const std::vector<integrate_path_struct>& path, double /*L_d*/, in
     return (diff > threshold_rad);
 }
 
-// 현재 속도를 기반으로 Pure Pursuit의 Lookahead 거리를 계산한다.
-// (튜닝 과정의 주석 처리된 이전 값들은 실제 사용 값 파악을 위해 그대로 보존한다.)
+// Pure Pursuit의 Lookahead 거리를 계산한다. ld는 속도와 무관하게 3.0으로 고정되어 있어
+// 항상 max_ld(0.4)로 clamp된다 (사실상 고정 Lookahead로 동작).
 void GetLd(ControllerState& st) {
-//   double gain_ld = 0.6; // 0.4 -> 0.6 ** tuning **
-  // double gain_ld = 0.7; // 0.4 -> 0.6 ** tuning ** 0.6 -> 0.7
-//   double max_ld  = 0.355;
-  double max_ld  = 0.4;  //
-  double min_ld  = 0.3; // 0.15 -> 0.1 -> 0.2 // ** 0.33 -> 0.23
-  // double velocity = st.speed_mps;
-//   double ld = gain_ld * velocity;
+  double max_ld  = 0.4;
+  double min_ld  = 0.3;
   double ld = 3.0;
   st.lookahead_m = std::max(min_ld, std::min(max_ld, ld));
 }

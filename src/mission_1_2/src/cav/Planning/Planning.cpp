@@ -84,7 +84,7 @@ bool isCorner(const std::vector<integrate_path_struct>& path, double /*L_d*/, in
 // 현재 속도를 기반으로 Pure Pursuit의 Lookahead 거리를 동적으로 계산한다.
 void GetLd(ControllerState& st) {
   double gain_ld = 0.4;
-  // [핵심 수정] 고속에서도 너무 멀리 보지 않도록 max_ld를 타이트하게 잡음
+  // 고속에서도 너무 멀리 보지 않도록 max_ld를 타이트하게 잡음
   double max_ld = 0.355;
   double min_ld = 0.15; // 최소값도 너무 작지 않게
   double velocity = st.speed_mps;
