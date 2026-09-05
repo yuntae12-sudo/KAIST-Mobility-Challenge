@@ -28,7 +28,15 @@ find_package(ament_index_cpp REQUIRED)
 # =============================================================================
 # Mission 3: CAV control
 # =============================================================================
-add_executable(control_cav_mission_1_1 src/control_cav_mission_1_1.cpp)
+add_executable(control_cav_mission_1_1
+  src/control_cav_mission_1_1.cpp
+  src/Global/Global.cpp
+  src/Utils/Utils.cpp
+  src/Planning/Planning.cpp
+  src/Control/Control.cpp
+  src/Mission/Mission.cpp
+)
+target_include_directories(control_cav_mission_1_1 PRIVATE src)
 ament_target_dependencies(control_cav_mission_1_1
   rclcpp
   geometry_msgs
