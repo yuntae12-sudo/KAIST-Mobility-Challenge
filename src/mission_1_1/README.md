@@ -23,13 +23,20 @@ mission_1_1/
 ├── CMakeLists.txt           # CMake 빌드 설정
 ├── package.xml              # ROS2 패키지 메타데이터
 └── src/
-    └── control_cav_mission_1_1.cpp  # 주요 제어 로직
+    ├── control_cav_mission_1_1.cpp  # ROS2 초기화 및 Pub/Sub, Process 함수 호출 흐름
+    ├── Global/       # 공유 자료구조(ControllerState, CavState) 및 위치 전역 상태
+    ├── Utils/        # 범용 헬퍼 (yaw 계산, CSV 로드, ID 변환 등)
+    ├── Planning/     # Closest Point 탐색, Corner 판단, Lookahead/목표 Waypoint 계산
+    ├── Control/      # 목표 속도 계획, Pure Pursuit, 제어 명령 생성
+    └── Mission/       # Lap 카운트 및 5바퀴 완주 판정
 ```
 
 ### 📦 ROS2 노드
 
 #### `control_cav_mission_1_1` 노드
-자동주행 차량의 주행 제어를 담당하는 메인 노드입니다.
+자동주행 차량의 주행 제어를 담당하는 메인 노드입니다. main은 ROS2 초기화와 Pub/Sub만 담당하며,
+Pose 콜백에서 `MissionProcess` → `PlanningProcess` → `DecideTargetSpeed` → `FindTargetWaypoint`
+→ `ControlProcess` 순서로 각 모듈의 Process 함수를 호출합니다.
 
 ---
 
@@ -201,20 +208,20 @@ ros2 run mission_1_1 control_cav_mission_1_1
 
 ## 🔍 주요 함수 설명
 
-### `findClosestPoint()`
+### `findClosestPoint()` (Planning)
 현재 위치에서 경로 상의 가장 가까운 웨이포인트 인덱스를 반환합니다.
 
-### `findWaypoint()`
+### `findWaypoint()` (Planning)
 현재 위치로부터 선행거리(Ld) 이상 떨어진 첫 번째 웨이포인트를 찾습니다.
 
-### `isCorner()`
+### `isCorner()` (Planning)
 향후 20개 웨이포인트의 각도 변화를 분석하여 커널 여부를 판단합니다.
 
-### `GetLd()`
+### `GetLd()` (Planning)
 현재 속도를 기반으로 Pure Pursuit의 선행거리를 동적으로 계산합니다.
 
-### `PoseCallbackForLap()`
-LAP 카운팅 로직을 관리합니다.
+### `MissionProcess()` (Mission)
+LAP 카운팅 로직을 관리합니다 (리팩토링 이전 이름: `PoseCallbackForLap()`).
 
 ---
 

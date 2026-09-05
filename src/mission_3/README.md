@@ -32,10 +32,36 @@ mission_3/
 ├── package.xml              # ROS2 패키지 메타데이터
 ├── launch/                  # ROS2 실행 설정
 └── src/
-    ├── control_cav_mission_3.cpp      # CAV 제어 노드
-    ├── control_tower_mission_3.cpp    # 타워(제어 센터) 노드
-    └── control_rotary_mission_3.cpp   # 원형 교차로 전용 제어 노드
+    ├── cav/                                # control_cav_mission_3 실행 파일 전용 모듈
+    │   ├── control_cav_mission_3.cpp        # ROS2 초기화, Pub/Sub, Process 호출 흐름
+    │   ├── Global/     # ControllerState(속도 램프/시작 정지 포함), CavState 등
+    │   ├── Utils/      # 범용 헬퍼 (yaw 계산, CSV 로드 등)
+    │   ├── Planning/   # Closest Point/Corner 판단, Lookahead/목표 Waypoint 계산
+    │   ├── Control/    # 목표 속도 계획, 속도 램프, Pure Pursuit, 명령 생성
+    │   └── Mission/    # Lap 카운트, 시작 3초 정지 활성화, 전체 완주 판정
+    │
+    ├── tower/                              # control_tower_mission_3 실행 파일 전용 모듈
+    │   ├── control_tower_mission_3.cpp      # ROS2 초기화, Pub/Sub, 메인 루프
+    │   ├── Global/       # Zone/ROI 좌표, 차량 위치 등 공유 상태
+    │   ├── Utils/        # 거리 계산, CSV 로드
+    │   ├── Planning/     # Lookahead 추출, 경로 겹침 판단, Sub CAV 선정
+    │   ├── Tower/        # Zone 충돌 판단 및 RED_FLAG 발행
+    │   └── Visualizer/   # RViz 시각화
+    │
+    ├── rotary/                             # control_rotary_mission_3 실행 파일 전용 모듈
+    │   ├── control_rotary_mission_3.cpp     # ROS2 초기화, Pub/Sub, 메인 루프
+    │   ├── Global/       # ROI/Zone Group 좌표, HV 상태
+    │   ├── Utils/        # 거리/호 길이 계산, CSV 로드
+    │   ├── Planning/     # 경로 인덱스 탐색, Yellow ROI Zone Group 판단
+    │   ├── Rotary/       # ROI Pair 기반 CAV 통행 허가 판단, HV 속도 측정
+    │   └── Visualizer/   # Yellow Zone RViz 시각화
+    │
+    └── check_motor/                        # check_motor 실행 파일 전용 모듈
+        ├── check_motor.cpp                 # ROS2 초기화, Pub/Sub, Process 호출 흐름
+        ├── Global/, Utils/, Planning/, Control/, Mission/
+        └── (control_cav_mission_3보다 이전 버전 로직: 속도 램프/시작 정지 없음. 모터 단독 확인용)
 ```
+네 개의 실행 파일은 서로 완전히 독립된 모듈 트리를 가지며, 폴더를 공유하지 않습니다.
 
 ### 📦 ROS2 노드
 
@@ -282,19 +308,23 @@ CAV 노드:
 
 ---
 
-## 🔍 주요 함수 (원형 교차로)
+## 🔍 주요 함수 (원형 교차로, rotary 모듈)
 
-### `GetArcLength()`
+### `GetArcLength()` (Utils)
 두 점 사이의 호 길이를 계산합니다 (원형 교차로 전용).
 
-### `measure_hv_velocity()`
+### `CalculateInstantVelocity()` (Rotary)
 HV의 위치 변화로부터 속도를 측정하고, 이동평균으로 노이즈를 제거합니다.
 
-### `calculate_distance()`
+### `calculate_distance()` (Utils)
 두 위치 사이의 직선 거리 (유클리드)를 계산합니다.
 
-### `find_closest_waypoint_index()`
+### `find_closest_waypoint_index()` (Planning)
 현재 위치에서 경로 상 가장 가까운 웨이포인트를 찾습니다.
+
+### `monitor_all_rois()` (Rotary)
+CAV ROI와 HV ROI를 짝지어 HV 도착 여부에 따라 CAV의 RED_FLAG/target_vel을 발행하는
+상위 Process 함수입니다.
 
 ---
 

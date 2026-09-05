@@ -32,8 +32,15 @@ mission_2/
 ├── package.xml              # ROS2 패키지 메타데이터
 ├── launch/                  # ROS2 실행 설정
 └── src/
-    └── control_cav_mission_2.cpp  # 차선 변경 제어 및 협력 주행
+    ├── control_cav_mission_2.cpp  # ROS2 초기화, Pub/Sub, Process 호출 흐름
+    ├── Global/     # 차선/Zone 좌표, HV 상태 등 공유 자료구조
+    ├── Utils/      # 범용 헬퍼 (거리 계산, yaw 계산, CSV 로드 등)
+    ├── Planning/   # 차선별 경로 탐색, Overlap 판정, 차선 선택/전환
+    ├── Control/    # 목표 속도 계획, Pure Pursuit, 우선순위 기반 명령 생성
+    └── Mission/    # Zone/ROI 충돌 판단, 차선별 정지 필요 여부, HV 속도 측정, 완주 판정
 ```
+Mission 2는 별도의 Tower 노드 없이, 이 CAV 노드 하나가 Zone 판단부터 차선 변경, 속도
+제어까지 모두 수행합니다. 그래서 Zone/충돌 판단은 `Tower`가 아닌 `Mission` 모듈에 있습니다.
 
 ### 📦 ROS2 노드
 
@@ -269,7 +276,7 @@ ros2 run mission_2 control_cav_mission_2
 
 ## 🔍 주요 함수 설명
 
-### Zone 검사 함수들
+### Zone 검사 함수들 (Mission 모듈)
 
 **`is_cav_in_zone*()`**
 - CAV가 특정 Zone 내에 있는지 선분으로부터 거리 계산으로 판정
@@ -279,24 +286,38 @@ ros2 run mission_2 control_cav_mission_2
 - HV가 특정 Zone 내에 있는지 판정
 - 선분 또는 다각형 Zone 지원
 
-**`check_zone_collision()`, `check_zone2_collision()`, ...**
+**`check_zone_collision()`, `check_zone2_collision()`, ...`**
 - 특정 Zone에서 CAV와 HV가 동시에 있는지 확인
 - 충돌 위험 판정
 
-### HV 속도 측정
+**`MissionProcess()`**
+- Zone 1~5 충돌 플래그 갱신, 차선별 물리적 충돌 계산, 정지 필요 여부(`stop_flag`) 판단까지
+  한 번에 수행하는 상위 Process 함수
+
+### HV 속도 측정 (Mission 모듈)
 
 **`MeasureHVVelocity()`**
 - HV의 위치 변화로부터 속도 측정
 - 이동평균 필터 적용으로 노이즈 제거
 - 측정된 속도는 `measured_hv20_vel`, `measured_hv24_vel`에 저장
 
-### 경로 관리
+### 경로 관리 (Planning 모듈)
 
 **`get_lane_start_idx()`**
 - 현재 위치에서 특정 차선의 가장 가까운 웨이포인트 인덱스 반환
 
 **`init_overlap_region()`**
 - Lane 2와 Lane 3이 겹치는 구간(인덱스 범위) 사전 계산
+
+**`PlanningProcess()`**
+- `choose_lane()`으로 다음 차선을 선택하고, 조건을 만족하면 `change_csv_state()`로 차선을 전환하는
+  상위 Process 함수
+
+### 제어 (Control 모듈)
+
+**`ControlProcess()`**
+- Closest Point 탐색 실패 시 false를 반환해 publish를 생략하고, 그 외에는 `planVelocity()` →
+  `GetLd()` → Pure Pursuit → `FillControlCommand()` 순서로 명령을 생성하는 상위 Process 함수
 
 ---
 

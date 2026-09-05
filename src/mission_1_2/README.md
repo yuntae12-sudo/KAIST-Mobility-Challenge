@@ -23,9 +23,23 @@ mission_1_2/
 ├── CMakeLists.txt           # CMake 빌드 설정
 ├── package.xml              # ROS2 패키지 메타데이터
 └── src/
-    ├── control_cav_mission_1_2.cpp      # CAV 제어 노드
-    └── control_tower_mission_1_2.cpp    # 타워(제어 센터) 노드
+    ├── cav/                                  # control_cav_mission_1_2 실행 파일 전용 모듈
+    │   ├── control_cav_mission_1_2.cpp        # ROS2 초기화, Pub/Sub, Process 호출 흐름
+    │   ├── Global/     # ControllerState, CavState 등 공유 자료구조
+    │   ├── Utils/      # 범용 헬퍼 (yaw 계산, CSV 로드 등)
+    │   ├── Planning/   # Closest Point/Corner 판단, Lookahead/목표 Waypoint 계산
+    │   ├── Control/    # 목표 속도 계획, Pure Pursuit, 명령 생성
+    │   └── Mission/    # Lap 카운트, 전체 완주 판정
+    └── tower/                                # control_tower_mission_1_2 실행 파일 전용 모듈
+        ├── control_tower_mission_1_2.cpp      # ROS2 초기화, Pub/Sub, 메인 루프
+        ├── Global/       # Zone/ROI 좌표, 차량 위치 등 공유 상태
+        ├── Utils/        # 거리 계산, CSV 로드
+        ├── Planning/     # Lookahead 추출, 경로 겹침 판단, Sub CAV 선정
+        ├── Tower/        # Zone/ROI 충돌 판단 및 RED_FLAG 발행
+        └── Visualizer/   # RViz 시각화
 ```
+CAV와 Tower는 서로 다른 실행 파일이므로 `cav/`, `tower/` 아래에 각자 독립된 Global/Utils/Planning
+모듈 트리를 갖습니다 (두 실행 파일이 폴더를 공유하지 않습니다).
 
 ### 📦 ROS2 노드
 
@@ -244,17 +258,23 @@ CAV 노드:
 
 ## 🔍 주요 함수 (타워)
 
-### `calculate_distance()`
+### `calculate_distance()` (Utils)
 두 위치 사이의 유클리드 거리를 계산합니다.
 
-### `is_in_precollision_zone()`
+### `is_in_precollision_zone()` (Tower)
 CAV가 위험 경고 영역(0.7m)에 있는지 확인합니다.
 
-### `is_in_imminent_collision_zone()`
+### `is_in_imminent_collision_zone()` (Tower)
 CAV가 긴급 정지 영역(0.5m)에 있는지 확인합니다.
 
-### `load_csv_file()`
+### `load_csv_file()` (Utils)
 경로 데이터를 CSV 파일로부터 로드합니다.
+
+### `monitor_zone()` (Tower)
+Zone 진입 차량을 감시하여 Main/Sub CAV를 판단하고 RED_FLAG를 발행합니다.
+
+### `publish_visualization()` (Visualizer)
+Zone/ROI/CAV 경로/HV 위치를 RViz MarkerArray로 시각화합니다.
 
 ---
 
