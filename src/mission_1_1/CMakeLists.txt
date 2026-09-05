@@ -26,7 +26,7 @@ find_package(ament_index_cpp REQUIRED)
 
 
 # =============================================================================
-# Mission 3: CAV control
+# Mission 1-1: CAV control
 # =============================================================================
 add_executable(control_cav_mission_1_1
   src/control_cav_mission_1_1.cpp
@@ -46,31 +46,6 @@ ament_target_dependencies(control_cav_mission_1_1
 )
 install(TARGETS control_cav_mission_1_1
   DESTINATION lib/${PROJECT_NAME})
-
-
-# =============================================================================
-# Decision: Lane overtake ROI visualizer
-# =============================================================================
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/decision/roi_visualizer.cpp)
-  add_executable(roi_visualizer src/decision/roi_visualizer.cpp)
-  ament_target_dependencies(roi_visualizer
-    rclcpp
-    geometry_msgs
-    std_msgs
-    visualization_msgs
-    tf2
-    ament_index_cpp
-  )
-  install(TARGETS roi_visualizer
-    DESTINATION lib/${PROJECT_NAME})
-endif()
-
-# =============================================================================
-# Install CSV files to share directory
-# =============================================================================
-install(DIRECTORY src/global_path/
-  DESTINATION share/${PROJECT_NAME}/global_path
-  FILES_MATCHING PATTERN "*.csv")
 
 # Install launch files
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/launch)

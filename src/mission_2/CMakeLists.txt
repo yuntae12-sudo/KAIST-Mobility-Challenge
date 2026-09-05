@@ -46,13 +46,6 @@ ament_target_dependencies(control_cav_mission_2
 install(TARGETS control_cav_mission_2
   DESTINATION lib/${PROJECT_NAME})
 
-# =============================================================================
-# Install CSV files to share directory
-# =============================================================================
-install(DIRECTORY src/global_path/
-  DESTINATION share/${PROJECT_NAME}/global_path
-  FILES_MATCHING PATTERN "*.csv")
-
 # Install launch files
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/launch)
   install(DIRECTORY launch/

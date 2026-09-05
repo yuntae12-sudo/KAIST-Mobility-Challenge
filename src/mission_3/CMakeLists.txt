@@ -111,14 +111,6 @@ target_include_directories(control_rotary_mission_3 PRIVATE src/rotary)
 ament_target_dependencies(control_rotary_mission_3 rclcpp std_msgs geometry_msgs visualization_msgs)
 install(TARGETS control_rotary_mission_3 DESTINATION lib/${PROJECT_NAME})
 
-
-# =============================================================================
-# Install CSV files to share directory
-# =============================================================================
-install(DIRECTORY src/global_path/
-  DESTINATION share/${PROJECT_NAME}/global_path
-  FILES_MATCHING PATTERN "*.csv")
-
 # Install launch files
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/launch)
   install(DIRECTORY launch/

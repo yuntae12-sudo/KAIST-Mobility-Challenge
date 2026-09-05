@@ -4,7 +4,9 @@ ROS2 launch file for mission_2.
 
 Usage:
   ros2 launch mission_2 mission_2.launch.py
-  ros2 launch mission_2 mission_2.launch.py executable:=control_cav_mission_2_ver2 enable_roi:=true
+
+Note: enable_roi:=true is currently non-functional -- the roi_visualizer executable
+it references is not built by this package's CMakeLists.txt.
 """
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
