@@ -28,7 +28,15 @@ find_package(ament_index_cpp REQUIRED)
 # =============================================================================
 # Mission 3: Motor Check
 # =============================================================================
-add_executable(check_motor src/check_motor.cpp)
+add_executable(check_motor
+  src/check_motor/check_motor.cpp
+  src/check_motor/Global/Global.cpp
+  src/check_motor/Utils/Utils.cpp
+  src/check_motor/Planning/Planning.cpp
+  src/check_motor/Control/Control.cpp
+  src/check_motor/Mission/Mission.cpp
+)
+target_include_directories(check_motor PRIVATE src/check_motor)
 ament_target_dependencies(check_motor
   rclcpp
   geometry_msgs
@@ -43,7 +51,15 @@ install(TARGETS check_motor
 # =============================================================================
 # Mission 3: CAV control
 # =============================================================================
-add_executable(control_cav_mission_3 src/control_cav_mission_3.cpp)
+add_executable(control_cav_mission_3
+  src/cav/control_cav_mission_3.cpp
+  src/cav/Global/Global.cpp
+  src/cav/Utils/Utils.cpp
+  src/cav/Planning/Planning.cpp
+  src/cav/Control/Control.cpp
+  src/cav/Mission/Mission.cpp
+)
+target_include_directories(control_cav_mission_3 PRIVATE src/cav)
 ament_target_dependencies(control_cav_mission_3
   rclcpp
   geometry_msgs
@@ -58,7 +74,15 @@ install(TARGETS control_cav_mission_3
 # =============================================================================
 # Mission 3: Control Tower
 # =============================================================================
-add_executable(control_tower_mission_3 src/control_tower_mission_3.cpp)
+add_executable(control_tower_mission_3
+  src/tower/control_tower_mission_3.cpp
+  src/tower/Global/Global.cpp
+  src/tower/Utils/Utils.cpp
+  src/tower/Planning/Planning.cpp
+  src/tower/Tower/Tower.cpp
+  src/tower/Visualizer/Visualizer.cpp
+)
+target_include_directories(control_tower_mission_3 PRIVATE src/tower)
 ament_target_dependencies(control_tower_mission_3
   rclcpp
   geometry_msgs
@@ -75,27 +99,18 @@ install(TARGETS control_tower_mission_3
 # =============================================================================
 # Mission 3: Control rotary
 # =============================================================================
-add_executable(control_rotary_mission_3 src/control_rotary_mission_3.cpp)
+add_executable(control_rotary_mission_3
+  src/rotary/control_rotary_mission_3.cpp
+  src/rotary/Global/Global.cpp
+  src/rotary/Utils/Utils.cpp
+  src/rotary/Planning/Planning.cpp
+  src/rotary/Rotary/Rotary.cpp
+  src/rotary/Visualizer/Visualizer.cpp
+)
+target_include_directories(control_rotary_mission_3 PRIVATE src/rotary)
 ament_target_dependencies(control_rotary_mission_3 rclcpp std_msgs geometry_msgs visualization_msgs)
 install(TARGETS control_rotary_mission_3 DESTINATION lib/${PROJECT_NAME})
 
-
-# =============================================================================
-# Decision: Lane overtake ROI visualizer
-# =============================================================================
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/decision/roi_visualizer.cpp)
-  add_executable(roi_visualizer src/decision/roi_visualizer.cpp)
-  ament_target_dependencies(roi_visualizer
-    rclcpp
-    geometry_msgs
-    std_msgs
-    visualization_msgs
-    tf2
-    ament_index_cpp
-  )
-  install(TARGETS roi_visualizer
-    DESTINATION lib/${PROJECT_NAME})
-endif()
 
 # =============================================================================
 # Install CSV files to share directory
