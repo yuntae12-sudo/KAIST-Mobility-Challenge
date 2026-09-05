@@ -73,10 +73,7 @@ bool isCorner(const std::vector<integrate_path_struct>& path, double /*L_d*/, in
 
   int idx_future_start = closest_idx + future_offset;
   double fut_ang = atan2(path[idx_future_start + 1].y - path[idx_future_start].y,
-                         path[idx_future_start + 1].x - path[idx_future_start + 1].x); // <-- (오타 방지용 자리)
-  // 위 줄은 잘못된 예시가 될 수 있어, 아래 올바른 줄로 다시 계산
-  fut_ang = atan2(path[idx_future_start + 1].y - path[idx_future_start].y,
-                  path[idx_future_start + 1].x - path[idx_future_start].x);
+                         path[idx_future_start + 1].x - path[idx_future_start].x);
 
   double diff = fabs(normalizeAngle(fut_ang - cur_ang));
   if (diff > M_PI / 2) diff = M_PI - diff;
