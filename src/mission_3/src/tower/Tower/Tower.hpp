@@ -15,13 +15,29 @@
 #include "Global/Global.hpp"
 
 // ==============================
+// Tower Process
+// ==============================
+// 활성화된 Zone(1~3) 전체를 순회하며 monitor_zone()을 호출하는 상위 Process 함수.
+// main의 while 루프가 매 tick마다 호출해야 하는 Tower 판단 전체를 대표한다.
+void TowerProcess(
+    std::shared_ptr<rclcpp::Node> node,
+    std::map<int, rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr>& red_flag_pubs,
+    std::map<int, std::vector<int>>& prev_red_flag_vehicles,
+    double precollision_radius,
+    double imminent_collision_radius,
+    double overlap_threshold,
+    int lookahead_distance,
+    const std::map<int, int>& cav_index_map_actual_to_idx,
+    const std::map<int, int>& cav_index_map_idx_to_actual);
+
+// ==============================
 // Zone Check
 // ==============================
 bool is_in_precollision_zone(Pose cav_pose, Pose zone_origin, double radius);
 bool is_in_imminent_collision_zone(Pose cav_pose, Pose zone_origin, double radius);
 
 // ==============================
-// Zone 모니터링 및 RED_FLAG 발행 (Tower Process)
+// Zone 모니터링 및 RED_FLAG 발행
 // ==============================
 // CAV 인덱스(1~4)와 실제 CAV ID(CAV_IDS 환경변수 순서) 사이의 매핑을 사용해
 // 경로/Publisher를 조회하고 RED_FLAG 신호를 발행한다.

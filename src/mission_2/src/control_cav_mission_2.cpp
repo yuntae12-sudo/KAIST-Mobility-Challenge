@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
                     lane, lane_paths[lane].size());
     }
 
-    // HV 경로 로드 (추가!)
+    // HV 경로 로드
     RCLCPP_INFO(node->get_logger(), "[PRELOAD] Loading HV paths for velocity measurement...");
 
     // HV20 (Lane 3) 경로
@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
     RCLCPP_INFO(node->get_logger(), "[INIT] Subscribed to HV_19~HV_36");
 
 
-    // HV 속도 측정을 위한 별도 구독 (추가!)
+    // HV 속도 측정을 위한 별도 구독
     auto hv20_vel_sub = node->create_subscription<geometry_msgs::msg::PoseStamped>(
         "/HV_20", rclcpp::SensorDataQoS(),
         [node](const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
@@ -185,13 +185,22 @@ int main(int argc, char** argv) {
             bool is_overlap_zone = false;
             bool stop_flag = MissionProcess(cav_id, lane_collision, is_overlap_zone, node);
 
+            // 2-1) Mission: 완주(Race Over) 판정 (Planning과 데이터 의존성 없음)
+            bool race_over = is_race_over(*st2);
+
             // 3) Planning: 다음 차선 선택 및 필요 시 차선 전환
             int next_lane = PlanningProcess(cav_id, lane_collision,
                                              zone3_collision_flag, zone4_collision_flag, zone5_collision_flag,
                                              zone_collision_flag, zone2_collision_flag,
                                              stop_flag, node);
 
-            // ===== 8. Lane switch if needed =====
+            // TODO(cleanup candidate, not fixed in this pass): this block duplicates the
+            // change_csv_state() call already performed inside PlanningProcess() above with
+            // the identical gating condition. It was already present as a duplicate call in
+            // the pre-refactor main branch code (not introduced by this restructuring), and
+            // lane_start_distance below is computed but never used to gate anything there
+            // either. Left intact to preserve original behavior exactly; a future
+            // behavior-changing cleanup could remove this block once verified redundant.
             double lane_start_distance = 1e10;
             if (lane_start_idx[current_lane] >= 0 && lane_start_idx[next_lane] >= 0) {
                  // 목표 차선까지의 거리 계산이 아니라, 차선 변경 안정성을 위해
@@ -208,10 +217,7 @@ int main(int argc, char** argv) {
                  change_csv_state(cav_id, next_lane, node);
             }
 
-            // ===== 9. Race Over Logic =======
-            bool race_over = is_race_over(*st2);
-
-            // 10. Log Lane Status (수정됨: 상태 확인용)
+            // 상태 확인용 차선 로그 (LOG_INTERVAL_MS 주기로 출력)
             auto now = std::chrono::steady_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_log_time).count();
 

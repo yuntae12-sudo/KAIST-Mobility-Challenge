@@ -6,7 +6,52 @@
 #include <cmath>
 #include <numeric>
 
+#include "Planning/Planning.hpp"
 #include "Utils/Utils.hpp"
+
+// =========================
+// Rotary Process: 모든 ROI Pair를 모니터링한 뒤 Yellow Zone Group 변화에 따라
+// YELLOW_FLAG를 발행한다.
+// =========================
+void RotaryProcess(
+    const std::vector<std::pair<int, int>>& roi_pairs,
+    std::shared_ptr<rclcpp::Node> node,
+    std::map<int, rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr>& red_flag_pubs,
+    std::map<int, rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr>& yellow_flag_pubs,
+    std::map<int, rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr>& target_vel_pubs,
+    double detection_radius,
+    double reset_radius,
+    double yellow_roi_detection_radius) {
+  // 모든 ROI 쌍에 대해 모니터링 수행
+  for (const auto& pair : roi_pairs) {
+    monitor_all_rois(pair.first,        // cav_roi_id
+        pair.second,       // hv_roi_id
+        node,
+        red_flag_pubs,
+        target_vel_pubs,
+        detection_radius,   // double radius
+        reset_radius
+    );
+  }
+
+  // Yellow ROI 모니터링 - Zone Group별 플래그 발행
+  for (const auto& [cav_index, cav_pose] : cav_poses) {
+    int current_zone_group = get_zone_group_for_cav(cav_index, cav_pose, yellow_roi_detection_radius);
+    int previous_zone_group = cav_current_zone_group[cav_index];
+
+    // Zone group이 변경되었을 때
+    if (current_zone_group != previous_zone_group) {
+      cav_current_zone_group[cav_index] = current_zone_group;
+
+      // yellow_flag_1 또는 yellow_flag_2 발행 (또는 0으로 리셋)
+      auto yellow_msg = std_msgs::msg::Int32();
+      yellow_msg.data = current_zone_group;  // 0, 1, or 2
+      if (yellow_flag_pubs.count(cav_index)) {
+        yellow_flag_pubs[cav_index]->publish(yellow_msg);
+      }
+    }
+  }
+}
 
 // =========================
 // 통합 제어 함수 Pair 기반

@@ -111,7 +111,7 @@ int findWaypoint(const std::vector<PathPoint>& path, double x, double y, double 
 
     int path_size = (int)path.size();
 
-    // [수정] 현재 위치부터 경로 길이만큼 순환하며 탐색
+    // 현재 위치부터 경로 길이만큼 순환하며 탐색
     for (int i = 0; i < path_size; i++) {
         int target_idx = (closest_idx + i) % path_size; // 순환 인덱스
 
@@ -224,6 +224,11 @@ bool check_approaching_overlap(int current_lane3_idx) {
 int choose_lane(const std::vector<bool>& collision_list, int current_lane, bool in_zone3, bool in_zone4, bool in_zone5) {
     std::vector<int> priority;
     priority.push_back(current_lane);
+    // NOTE(circular dependency, intentionally kept): is_cav_in_zone3/4() are Mission-owned
+    // Zone checks. solid_lane1/solid_lane2 below are computed but never read anywhere in
+    // this function (dead calculation), confirmed identical in the pre-refactor main branch
+    // code. Kept as-is for exact behavior preservation rather than removed, since this is a
+    // structure-only cleanup pass, not an algorithm change.
     bool solid_lane1 = is_cav_in_zone3(cav_x, cav_y);
     bool solid_lane2 = is_cav_in_zone4(cav_x, cav_y);
 

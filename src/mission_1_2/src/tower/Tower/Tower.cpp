@@ -10,6 +10,65 @@
 #include "Utils/Utils.hpp"
 
 // =========================
+// Tower Process: ROI 기반 CAV1/CAV2 제어 판단 후 Zone 2, 4를 모니터링한다.
+// =========================
+void TowerProcess(
+    std::shared_ptr<rclcpp::Node> node,
+    std::map<int, rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr>& red_flag_pubs,
+    std::map<int, std::vector<int>>& prev_red_flag_vehicles,
+    double precollision_radius,
+    double imminent_collision_radius,
+    double overlap_threshold,
+    int lookahead_distance) {
+  // ROI 기반 CAV2 제어 (실시간 위치 기반)
+  bool cav2_should_stop = should_cav2_stop_by_roi(node);
+
+  static bool prev_cav2_roi_stop = false;
+  if (cav2_should_stop != prev_cav2_roi_stop) {
+    auto msg = std_msgs::msg::Int32();
+    msg.data = cav2_should_stop ? 1 : 0;
+    red_flag_pubs[2]->publish(msg);
+
+    if (cav2_should_stop) {
+      RCLCPP_ERROR(node->get_logger(), "[ROI CONTROL] CAV_2 RED_FLAG by ROI logic");
+    } else {
+      RCLCPP_INFO(node->get_logger(), "[ROI CONTROL] CAV_2 GREEN_FLAG by ROI logic");
+    }
+
+    prev_cav2_roi_stop = cav2_should_stop;
+  }
+
+  // ---------------------------------------------------------
+  // ROI 4 기반 CAV1 제어 (합류 구간)
+  // ---------------------------------------------------------
+  bool cav1_merge_stop = should_cav1_stop_by_merge_roi(node);
+  static bool prev_cav1_merge_stop = false;
+
+  // 상태가 변했을 때만 Publish (토픽 부하 방지)
+  if (cav1_merge_stop != prev_cav1_merge_stop) {
+      auto msg = std_msgs::msg::Int32();
+      msg.data = cav1_merge_stop ? 1 : 0;
+      red_flag_pubs[1]->publish(msg); // CAV1에게 정지 신호 보냄
+
+      if (cav1_merge_stop) {
+          RCLCPP_ERROR(node->get_logger(), "[MERGE CONTROL] CAV_1 RED_FLAG! (Conflict at ROI 4)");
+      } else {
+          RCLCPP_INFO(node->get_logger(), "[MERGE CONTROL] CAV_1 GREEN_FLAG (ROI 4 Clear)");
+      }
+
+      prev_cav1_merge_stop = cav1_merge_stop;
+  }
+
+  // Zone 2, 4만 모니터링
+  monitor_zone(2, node, red_flag_pubs, prev_red_flag_vehicles,
+               precollision_radius, imminent_collision_radius,
+               overlap_threshold, lookahead_distance);
+  monitor_zone(4, node, red_flag_pubs, prev_red_flag_vehicles,
+               precollision_radius, imminent_collision_radius,
+               overlap_threshold, lookahead_distance);
+}
+
+// =========================
 // Precollision Zone 체크
 // =========================
 bool is_in_precollision_zone(Pose cav_pose, Pose zone_origin, double radius) {
@@ -105,7 +164,7 @@ bool should_cav1_stop_by_merge_roi(std::shared_ptr<rclcpp::Node> node) {
     return false;
   }
 
-  // ** 변경점: ROI 4 체크 시 ROI_MERGE_RADIUS 사용 **
+  // ROI 4(합류 구간)는 다른 ROI보다 넓은 ROI_MERGE_RADIUS로 판정한다.
   bool cav1_in_merge = is_in_roi(cav_poses[1], rois[4], ROI_MERGE_RADIUS);
   bool cav2_in_merge = is_in_roi(cav_poses[2], rois[4], ROI_MERGE_RADIUS);
 

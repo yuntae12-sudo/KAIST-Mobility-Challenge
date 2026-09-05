@@ -125,11 +125,10 @@ int main(int argc, char** argv) {
   std::map<int, std::vector<int>> prev_red_flag_vehicles;
 
   while (rclcpp::ok()) {
-    //  Zone 1, 2, 3만 모니터링 (Zone 4 제거)
-    for (int zone_id = 1; zone_id <= 3; zone_id++) {
-      monitor_zone(zone_id, node, red_flag_pubs, prev_red_flag_vehicles,
-                   precollision_radius, imminent_collision_radius, overlap_threshold, lookahead_distance, cav_index_map_actual_to_idx, cav_index_map_idx_to_actual);
-    }
+    TowerProcess(node, red_flag_pubs, prev_red_flag_vehicles,
+                 precollision_radius, imminent_collision_radius, overlap_threshold, lookahead_distance,
+                 cav_index_map_actual_to_idx, cav_index_map_idx_to_actual);
+
     // 시각화 발행 (10Hz)
     publish_visualization(node, marker_pub, precollision_radius, imminent_collision_radius, visualization_lookahead);
 

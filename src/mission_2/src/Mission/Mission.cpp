@@ -15,7 +15,7 @@
 bool MissionProcess(int cav_id, std::vector<bool>& lane_collision, bool& is_overlap_zone,
                      std::shared_ptr<rclcpp::Node> node)
 {
-  // ===== 2. ZONE 1 충돌 검사 (복구!) =====
+  // ===== 2. ZONE 1 충돌 검사 =====
   zone_collision_flag = check_zone_collision();
   zone_cav_flag = is_cav_in_zone(cav_x, cav_y);
 
@@ -65,7 +65,7 @@ bool MissionProcess(int cav_id, std::vector<bool>& lane_collision, bool& is_over
   }
 
   // =================================================================================
-  // [MODIFIED] 미리 계산된 인덱스 기반 Overlap 감지
+  // 미리 계산된 인덱스 기반 Overlap 감지
   // =================================================================================
   // 현재 내 위치가 Lane 3 경로 상에서 어디쯤(인덱스)인지 확인
   int my_idx_on_lane3 = get_lane_start_idx(3, cav_x, cav_y);
@@ -78,6 +78,15 @@ bool MissionProcess(int cav_id, std::vector<bool>& lane_collision, bool& is_over
     lane_collision[3] = true;
 
     // 2) 만약 현재 Lane 3를 달리고 있다면, 강제로 Lane 2로 변경
+    //
+    // NOTE(circular dependency, intentionally kept): change_csv_state() is a Planning-owned
+    // function, but MissionProcess calls it here directly rather than only returning a
+    // "needs lane change" state for PlanningProcess to act on. This is required for
+    // behavior preservation: change_csv_state() must update `current_lane` to 2 BEFORE
+    // should_stop()/choose_lane() run later in this same function (both read current_lane),
+    // exactly matching the original pre-refactor main() callback's execution order. Moving
+    // this call into PlanningProcess would defer it until after should_stop()/choose_lane()
+    // are evaluated, changing which lane those decisions are based on. Left as-is.
     if (current_lane == 3) {
       RCLCPP_WARN(node->get_logger(), "[OVERLAP] Approaching merge zone! Forcing Lane 3 -> Lane 2.");
       change_csv_state(cav_id, 2, node);
@@ -90,7 +99,7 @@ bool MissionProcess(int cav_id, std::vector<bool>& lane_collision, bool& is_over
 }
 
 // =========================
-// Zone 1 Detection Functions (복구!)
+// Zone 1 Detection Functions
 // =========================
 
 // HV Zone 안에 HV가 있는지 체크 (각 점 기준 0.1m 반경)
@@ -154,7 +163,7 @@ bool check_zone_collision() {
 }
 
 // =========================
-// Zone 2 Detection Functions (추가!)
+// Zone 2 Detection Functions
 // =========================
 
 // HV Zone 2 안에 HV가 있는지 체크 (선분으로부터 거리)
@@ -412,8 +421,7 @@ bool check_lane_roi_collision(int lane_id, int start_idx,
     for (int offset : roi_offsets) {
         int check_idx = start_idx + offset;
 
-        // [수정] 순환(Circular) 인덱스 처리
-        // 범위를 벗어나면 반대편으로 넘김
+        // 순환(Circular) 인덱스 처리: 범위를 벗어나면 반대편으로 넘김
         if (check_idx >= path_size) {
             check_idx -= path_size;
         } else if (check_idx < 0) {
