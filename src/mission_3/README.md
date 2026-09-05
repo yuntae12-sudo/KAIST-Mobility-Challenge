@@ -189,7 +189,9 @@ double measured_hv_vel = std::accumulate(vel_buffer.begin(), vel_buffer.end(), 0
 
 ### 6️⃣ **충돌 방지 로직 (3-Zone 관리)**
 
-타워 노드에서 3개의 교차로 각각에 대해:
+타워 노드는 `TowerProcess()`를 상위 Process 함수로 두고, 그 안에서 활성 Zone(1~3)을 순회하며
+`monitor_zone()`을 호출합니다. main의 while 루프는 매 tick마다 `TowerProcess()` 호출 후
+`publish_visualization()`만 호출합니다.
 
 ```cpp
 // Zone별 충돌 판단
@@ -310,6 +312,11 @@ CAV 노드:
 
 ## 🔍 주요 함수 (원형 교차로, rotary 모듈)
 
+### `RotaryProcess()` (Rotary)
+모든 ROI Pair에 대해 `monitor_all_rois()`를 호출한 뒤, 각 CAV의 Yellow Zone Group 변화를
+감지하여 YELLOW_FLAG를 발행하는 상위 Process 함수입니다. main의 while 루프는 매 tick마다
+Yellow Zone 시각화 이후 이 함수 하나만 호출합니다.
+
 ### `GetArcLength()` (Utils)
 두 점 사이의 호 길이를 계산합니다 (원형 교차로 전용).
 
@@ -323,8 +330,8 @@ HV의 위치 변화로부터 속도를 측정하고, 이동평균으로 노이�
 현재 위치에서 경로 상 가장 가까운 웨이포인트를 찾습니다.
 
 ### `monitor_all_rois()` (Rotary)
-CAV ROI와 HV ROI를 짝지어 HV 도착 여부에 따라 CAV의 RED_FLAG/target_vel을 발행하는
-상위 Process 함수입니다.
+CAV ROI와 HV ROI를 짝지어 HV 도착 여부에 따라 CAV의 RED_FLAG/target_vel을 발행합니다.
+`RotaryProcess()`가 ROI Pair마다 이 함수를 호출합니다.
 
 ---
 

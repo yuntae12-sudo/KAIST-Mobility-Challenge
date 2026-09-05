@@ -270,6 +270,10 @@ CAV가 긴급 정지 영역(0.5m)에 있는지 확인합니다.
 ### `load_csv_file()` (Utils)
 경로 데이터를 CSV 파일로부터 로드합니다.
 
+### `TowerProcess()` (Tower)
+ROI 기반 CAV1/CAV2 제어 판단 후 Zone 2, 4를 모니터링하는 상위 Process 함수입니다.
+main의 while 루프는 매 tick마다 이 함수 하나만 호출합니다.
+
 ### `monitor_zone()` (Tower)
 Zone 진입 차량을 감시하여 Main/Sub CAV를 판단하고 RED_FLAG를 발행합니다.
 
